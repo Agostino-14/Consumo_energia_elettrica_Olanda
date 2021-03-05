@@ -48,14 +48,14 @@ raw_df = raw_df.withColumn('active_connections', func.round(((raw_df['num_connec
 drop_list = ['deliviery_perc', 'perc_of_active_connections', 'annual_consume_lowtarif_perc', 'type_conn_perc', 'smartmeter_perc', 'net_manager', 'purchase_area', 'street', 'zipcode_from', 'zipcode_to', 'type_of_connection']
 raw_df = raw_df.select([column for column in raw_df.columns if column not in drop_list])
 
-#Applichiamo l'UPPER sulla colonna city
-raw_df = raw_df.withColumn('city', func.upper(raw_df['city']))
+#Puliama la colonna city
+raw_df = raw_df.withColumn('city', func.upper(func.regexp_replace(func.trim(raw_df['city']), "[^A-Z0-9_]", "")))
 
 #Aggreghiamo per City e Year, applicando la somma sulle colonne numeriche
 group_df = raw_df.groupBy('city','year').sum()
 
 #Contiamo i record
-group_df.count()
+#group_df.count()
 #count = 27445
 
 #Rinominiamo le colonne e applichiamo la round sulle colonne float
@@ -69,6 +69,20 @@ group_df = group_df.withColumn('delivered_perc', func.round(((group_df['delivere
 group_df = group_df.withColumn('annual_consume_lowtarif_perc', func.round(((group_df['annual_consume_lowtarif']*100)/group_df['annual_consume']),2).cast('float'))
 group_df = group_df.withColumn('smartmeter_perc', func.round(((group_df['smartmeter']*100)/group_df['num_connections']),2).cast('float'))
 group_df = group_df.withColumn('active_connections_perc', func.round(((group_df['active_connections']*100)/group_df['num_connections']),2).cast('float'))
+
+#Cache del nuovo dataframe
+raw_df.unpersist(blocking=True)
+group_df.cache()
+group_df.count()
+
+#Leggo la tabella contenente le info sulle citta' e modifico i campi city e admin-name in uppercase
+cities = sqlContext.table('netherland_cities')
+cities = cities.withColumn('city', func.upper(func.regexp_replace(func.trim(raw_df['city']), "[^A-Z0-9_]", ""))).withColumn('admin_name', func.upper(cities['admin_name'])).withColumnRenamed('admin_name','region').withColumnRenamed('city','city_key')
+cities = cities.select('city_key', 'region', 'lat', 'lng')
+
+#Join tra i due dataframe per citta'
+left_join = group_df.join(cities, group_df['city'] == cities['city_key'], how='left')
+left_join.drop('city_key')
 
 #Scriviamo i risultati
 group_df.coalesce(1).write.save('/user/cloudera/target/electricity_cleaned/', format='json', mode='overwrite')
