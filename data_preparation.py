@@ -81,8 +81,7 @@ cities = cities.withColumn('city', func.upper(func.regexp_replace(func.trim(citi
 cities = cities.select('city_key', 'region', 'lat', 'lng')
 
 #Join tra i due dataframe per citta'
-left_join = group_df.join(cities, group_df['city'] == cities['city_key'], how='left')
-left_join.drop('city_key')
+left_join = group_df.join(cities, group_df['city'] == cities['city_key'], how='left').drop('city_key')
 
 #Scriviamo i risultati
 left_join.coalesce(1).write.save('/user/cloudera/target/electricity_cleaned/', format='json', mode='overwrite')
