@@ -77,7 +77,7 @@ group_df.count()
 
 #Leggo la tabella contenente le info sulle citta' e modifico i campi city e admin-name in uppercase
 cities = sqlContext.table('netherland_cities')
-cities = cities.withColumn('city', func.upper(func.regexp_replace(func.trim(raw_df['city']), "[^A-Z0-9_]", ""))).withColumn('admin_name', func.upper(cities['admin_name'])).withColumnRenamed('admin_name','region').withColumnRenamed('city','city_key')
+cities = cities.withColumn('city', func.upper(func.regexp_replace(func.trim(cities['city']), "[^A-Z0-9_]", ""))).withColumn('admin_name', func.upper(cities['admin_name'])).withColumnRenamed('admin_name','region').withColumnRenamed('city','city_key')
 cities = cities.select('city_key', 'region', 'lat', 'lng')
 
 #Join tra i due dataframe per citta'
