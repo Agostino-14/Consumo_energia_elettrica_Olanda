@@ -85,4 +85,4 @@ left_join = group_df.join(cities, group_df['city'] == cities['city_key'], how='l
 left_join.drop('city_key')
 
 #Scriviamo i risultati
-group_df.coalesce(1).write.save('/user/cloudera/target/electricity_cleaned/', format='json', mode='overwrite')
+left_join.coalesce(1).write.save('/user/cloudera/target/electricity_cleaned/', format='json', mode='overwrite')
